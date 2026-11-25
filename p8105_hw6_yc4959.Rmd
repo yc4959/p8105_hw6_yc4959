@@ -1,0 +1,50 @@
+---
+title: "p8105_hw6_yc4959"
+author: "Yimeng Cao"
+date: "2026-11-24"
+output: github_document
+---
+
+```{r setup, include = FALSE, message = FALSE}
+library(tidyverse)
+library(modelr)
+library(p8105.datasets)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+
+set.seed(1)
+```
+
+## Problem 1
+
+### Import and clean the data
+
+I imported the homicide data, created `city_state` and a binary `resolved` variable, and kept only victims whose race is White or Black. I also removed Dallas, TX; Phoenix, AZ; Kansas City, MO; and Tulsa, AL.
+
+```{r}
+homicide_df = 
+  read_csv("data/homicide-data.csv") |> 
+  mutate(
+    city_state = str_c(city, ", ", state),
+    resolved = as.numeric(disposition == "Closed by arrest"),
+    victim_age = as.numeric(victim_age)) |> 
+  filter(
+    !(city_state %in% c("Dallas, TX", "Phoenix, AZ", "Kansas City, MO", "Tulsa, AL")),
+    victim_race %in% c("White", "Black")) |> 
+  mutate(victim_race = fct_relevel(victim_race, "White")) |> 
+  select(city_state, resolved, victim_age, victim_race, victim_sex)
+```
