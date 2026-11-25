@@ -193,3 +193,28 @@ The distribution of r-squared is roughly bell-shaped and centered around `r roun
 This means `tmin` and `prcp` explain most of the variation in `tmax` across bootstrap samples. 
 The distribution of beta1 * beta2 is also roughly bell-shaped, but it is centered slightly below 0 with a longer tail on the left. 
 This is because the coefficient for `prcp` is very close to 0 and is usually slightly negative.
+
+
+### Construct confidence intervals
+
+I used the 2.5% and 97.5% quantiles of the 5000 bootstrap estimates to construct 95% confidence intervals.
+
+```{r}
+r_squared_df |> 
+  summarize(
+    ci_lower = quantile(r_squared, 0.025),
+    ci_upper = quantile(r_squared, 0.975)) |> 
+  knitr::kable(digits = 3)
+
+beta_df |> 
+  summarize(
+    ci_lower = quantile(beta_product, 0.025),
+    ci_upper = quantile(beta_product, 0.975)) |> 
+  knitr::kable(digits = 5)
+```
+
+The 95% confidence interval for r-squared is (`r round(quantile(pull(r_squared_df, r_squared), 0.025), 3)`, `r round(quantile(pull(r_squared_df, r_squared), 0.975), 3)`), and the 95% confidence interval for beta1 * beta2 is (`r round(quantile(pull(beta_df, beta_product), 0.025), 5)`, `r round(quantile(pull(beta_df, beta_product), 0.975), 5)`).
+
+## Problem 3
+
+### Load and clean the data
