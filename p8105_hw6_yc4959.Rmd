@@ -118,3 +118,78 @@ city_results |>
 
 Most cities have an estimated odds ratio below 1, so homicides with male victims tend to be less likely to be solved than those with female victims. New York has the lowest odds ratio, while Albuquerque has the highest. Many of the confidence intervals include 1, especially for smaller cities, so the difference is not significant in those cities. The cities with odds ratios above 1, like Albuquerque, Stockton and Fresno, all have very wide confidence intervals, so I would not trust those estimates too much.
 
+## Problem 2
+
+### Draw bootstrap samples and fit models
+
+I used the Central Park weather data and drew 5000 bootstrap samples. For each sample, I fit a linear regression with `tmax` as the outcome and `tmin` and `prcp` as predictors.
+
+```{r}
+data("weather_df")
+
+central_park_df = 
+  weather_df |> 
+  filter(name == "CentralPark_NY") |> 
+  select(tmax, tmin, prcp)
+
+boot_results = 
+  central_park_df |> 
+  modelr::bootstrap(n = 5000) |> 
+  mutate(
+    models = map(strap, \(df) lm(tmax ~ tmin + prcp, data = df)),
+    glance = map(models, broom::glance),
+    results = map(models, broom::tidy)) |> 
+  select(-strap, -models)
+```
+
+### Extract the two quantities
+
+I used `broom::glance()` to get r-squared and `broom::tidy()` to get the coefficients for `tmin` and `prcp`.
+
+```{r}
+r_squared_df = 
+  boot_results |> 
+  select(.id, glance) |> 
+  unnest(glance) |> 
+  select(.id, r_squared = r.squared)
+
+beta_df = 
+  boot_results |> 
+  select(.id, results) |> 
+  unnest(results) |> 
+  filter(term %in% c("tmin", "prcp")) |> 
+  select(.id, term, estimate) |> 
+  pivot_wider(
+    names_from = term, 
+    values_from = estimate) |> 
+  mutate(beta_product = tmin * prcp)
+```
+
+### Plot the distributions
+
+```{r}
+r_squared_df |> 
+  ggplot(aes(x = r_squared)) + 
+  geom_density() + 
+  labs(
+    title = "Bootstrap distribution of r-squared",
+    x = "Estimated r-squared",
+    y = "Density"
+  )
+```
+
+```{r}
+beta_df |> 
+  ggplot(aes(x = beta_product)) + 
+  geom_density() + 
+  labs(
+    title = "Bootstrap distribution of beta1 * beta2",
+    x = "Estimated beta1 * beta2",
+    y = "Density"
+  )
+```
+
+The distribution of r-squared is roughly bell-shaped and centered around `r round(mean(pull(r_squared_df, r_squared)), 2)`, with a slightly longer tail on the left.
+This means `tmin` and `prcp` explain most of the variation in `tmax` across bootstrap samples. 
+The distribution of beta1 * beta2 is also roughly bell-shaped, but it is centered slightly below 0 with a longer tail on the left. 
+This is because the coefficient for `prcp` is very close to 0 and is usually slightly negative.
