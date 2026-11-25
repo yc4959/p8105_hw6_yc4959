@@ -5,7 +5,7 @@ date: "2026-11-24"
 output: github_document
 ---
 
-```{r setup, include = FALSE, message = FALSE}
+```{r setup, include = FALSE, warning = FALSE}
 library(tidyverse)
 library(modelr)
 library(p8105.datasets)
@@ -48,3 +48,57 @@ homicide_df =
   mutate(victim_race = fct_relevel(victim_race, "White")) |> 
   select(city_state, resolved, victim_age, victim_race, victim_sex)
 ```
+
+### Fit a logistic regression for Baltimore
+
+I fit a logistic regression for Baltimore, MD with resolved status as the outcome and victim age, sex and race as predictors.
+
+```{r}
+baltimore_fit = 
+  homicide_df |> 
+  filter(city_state == "Baltimore, MD") |> 
+  glm(resolved ~ victim_age + victim_sex + victim_race, data = _, family = binomial())
+
+baltimore_or = 
+  baltimore_fit |> 
+  broom::tidy() |> 
+  mutate(
+    OR = exp(estimate),
+    ci_lower = exp(estimate - 1.96 * std.error),
+    ci_upper = exp(estimate + 1.96 * std.error)) |> 
+  filter(term == "victim_sexMale") |> 
+  select(term, OR, ci_lower, ci_upper)
+
+baltimore_or |> 
+  knitr::kable(digits = 3)
+```
+
+In Baltimore, the odds of solving a homicide with a male victim are `r round(pull(baltimore_or, OR), 2)` times the odds for a female victim, keeping age and race fixed. 
+The 95% confidence interval is (`r round(pull(baltimore_or, ci_lower), 2)`, `r round(pull(baltimore_or, ci_upper), 2)`), which does not include 1.
+
+### Fit a logistic regression for each city
+
+I nested the data within cities, fit the same model in each city, and extracted the adjusted odds ratio comparing male victims to female victims.
+
+```{r}
+city_results = 
+  homicide_df |> 
+  nest(data = -city_state) |> 
+  mutate(
+    models = map(data, \(df) glm(resolved ~ victim_age + victim_sex + victim_race, data = df, family = binomial())),
+    results = map(models, broom::tidy)) |> 
+  select(-data, -models) |> 
+  unnest(results) |> 
+  filter(term == "victim_sexMale") |> 
+  mutate(
+    OR = exp(estimate),
+    ci_lower = exp(estimate - 1.96 * std.error),
+    ci_upper = exp(estimate + 1.96 * std.error)) |> 
+  select(city_state, OR, ci_lower, ci_upper)
+
+city_results |> 
+  knitr::kable(digits = 3)
+```
+
+
+
