@@ -100,5 +100,21 @@ city_results |>
   knitr::kable(digits = 3)
 ```
 
+### Plot the odds ratios
 
+```{r}
+city_results |> 
+  mutate(city_state = fct_reorder(city_state, OR)) |> 
+  ggplot(aes(x = city_state, y = OR)) + 
+  geom_point() + 
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper)) + 
+  labs(
+    title = "Adjusted ORs for solved homicides, male vs female",
+    x = "City",
+    y = "Adjusted odds ratio (95% CI)"
+  ) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+Most cities have an estimated odds ratio below 1, so homicides with male victims tend to be less likely to be solved than those with female victims. New York has the lowest odds ratio, while Albuquerque has the highest. Many of the confidence intervals include 1, especially for smaller cities, so the difference is not significant in those cities. The cities with odds ratios above 1, like Albuquerque, Stockton and Fresno, all have very wide confidence intervals, so I would not trust those estimates too much.
 
