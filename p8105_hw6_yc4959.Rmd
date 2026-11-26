@@ -234,6 +234,7 @@ birthweight_df =
     mrace = as.factor(mrace),
     malform = case_match(malform, 0 ~ "absent", 1 ~ "present"),
     malform = as.factor(malform))
+skimr::skim(birthweight_df)
 ```
 
 There is no missing data in this dataset. I also noticed that `pnumlbw` and `pnumsga` are 0 for every baby, so these two variables are not useful as predictors.
