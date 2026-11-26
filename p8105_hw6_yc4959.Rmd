@@ -218,3 +218,36 @@ The 95% confidence interval for r-squared is (`r round(quantile(pull(r_squared_d
 ## Problem 3
 
 ### Load and clean the data
+
+I imported the birthweight data, converted the categorical variables to factors, and checked for missing data.
+
+```{r}
+birthweight_df = 
+  read_csv("data/birthweight.csv") |> 
+  janitor::clean_names() |> 
+  mutate(
+    babysex = case_match(babysex, 1 ~ "male", 2 ~ "female"),
+    babysex = as.factor(babysex),
+    frace = case_match(frace, 1 ~ "White", 2 ~ "Black", 3 ~ "Asian", 4 ~ "Puerto Rican", 8 ~ "Other", 9 ~ "Unknown"),
+    frace = as.factor(frace),
+    mrace = case_match(mrace, 1 ~ "White", 2 ~ "Black", 3 ~ "Asian", 4 ~ "Puerto Rican", 8 ~ "Other"),
+    mrace = as.factor(mrace),
+    malform = case_match(malform, 0 ~ "absent", 1 ~ "present"),
+    malform = as.factor(malform))
+```
+
+There is no missing data in this dataset. I also noticed that `pnumlbw` and `pnumsga` are 0 for every baby, so these two variables are not useful as predictors.
+
+### Propose a regression model
+
+I chose variables that are known before birth and could affect birthweight: gestational age, mother's race, smoking, pre-pregnancy BMI, weight gain, and baby's sex. I left out head circumference and length because they are measured at birth, just like birthweight.
+
+```{r}
+proposed_model = 
+  lm(bwt ~ gaweeks + mrace + smoken + ppbmi + wtgain + babysex, data = birthweight_df)
+
+proposed_model |> 
+  broom::tidy() |> 
+  knitr::kable(digits = 3)
+```
+
